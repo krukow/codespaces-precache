@@ -1,0 +1,23 @@
+name: Pre cache codespace
+description: 'Caches codespaces for the repos that trigger this action.'
+inputs:
+  regions:
+    description: 'Comma separated region(s) to create cached codespaces in. Valid regions are: WestUs2 EastUs WestEurope SouthEastAsia'
+    required: true
+  sku_name:
+    description: 'Machine type for the cached codespaces.'
+    required: true
+  target:
+    description: 'Optional target environment value. Used for troubleshooting and development.'
+    required: false
+  target_url:
+    description: 'Optional target url. Used for troubleshooting and development.'
+    required: false
+runs:
+  using: 'composite'
+  steps:
+    - run: ${{ github.action_path }}/cache-codespace.sh
+      shell: bash
+      env:
+        INPUT_REGIONS: ${{ inputs.regions }}
+        INPUT_SKU_NAME: ${{ inputs.sku_name }}
