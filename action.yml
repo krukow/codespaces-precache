@@ -21,3 +21,5 @@ runs:
       env:
         INPUT_REGIONS: ${{ inputs.regions }}
         INPUT_SKU_NAME: ${{ inputs.sku_name }}
+        INPUT_TARGET: ${{ inputs.target }}
+        INPUT_TARGET_URL: ${{ inputs.target_url }}
