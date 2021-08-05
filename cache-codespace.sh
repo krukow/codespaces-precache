@@ -1,5 +1,31 @@
 #!/bin/bash
 
+get_status () {
+  local job_id="$1"
+  status=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild_template_provisioning_status/${job_id}" \
+    -H "Content-Type: application/json; charset=utf-8" \
+    -H "Authorization: token $GITHUB_TOKEN")
+}
+
+poll_status () {
+  local job_id="$1"
+  local attempt="${2:-1}"
+
+  get_status "$job_id"
+
+  echo $status
+
+  if [[ "$status" == *complete* ]]; then
+    return 0
+  elif [[ "$attempt" -ge ${MAX_POLLING_ATTEMPTS:-600} ]]; then
+    >&2 echo "Giving up after $attempt attempts to get the provisioning status"
+    return 1
+  else
+    sleep ${POLLING_DELAY:-5}
+    poll_status "$job_id" $(($attempt+1))
+  fi
+}
+
 if [[ -n "$INPUT_TARGET" ]]; then
   target="\"vscs_target\":\"$INPUT_TARGET\","
 fi
@@ -20,8 +46,10 @@ for region in $INPUT_REGIONS; do
     }
 JSON
 )
-  curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
+  job_id=$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
     -H "Content-Type: application/json; charset=utf-8" \
     -H "Authorization: token $GITHUB_TOKEN" \
-    -d "$body"
+    -d "$body")
+
+  poll_status $job_id
 done
