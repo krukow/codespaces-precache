@@ -2,7 +2,7 @@ name: Pre cache codespace
 description: 'Caches codespaces for the repos that trigger this action.'
 inputs:
   regions:
-    description: 'Comma separated region(s) to create cached codespaces in. Valid regions are: WestUs2 EastUs WestEurope SouthEastAsia'
+    description: 'Space-separated region(s) to create cached codespaces in. Valid regions are: WestUs2 EastUs WestEurope SouthEastAsia'
     required: true
   sku_name:
     description: 'Machine type for the cached codespaces.'
