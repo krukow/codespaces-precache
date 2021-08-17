@@ -39,7 +39,7 @@ The following properties can be added as input properties using [jobs.<job_id>.s
 | name | required? | description
 -------|-----------|------------
 |`regions` | yes | Separated region(s) to create cached codespaces in. Multiple regions can be specified, separated by spaces. Valid regions are: `WestUs2` `EastUs` `WestEurope` `SouthEastAsia`|
-|`sku_name` | yes | Machine type for the cached codespaces. Example: `standardLinux32GB`|
+|`sku_name` | yes | Machine type for the cached codespaces. Example: `standardLinux32gb`|
 
 ##### Other input properties
 There are 2 additional input parameters for GitHub Codespaces developer use only: `target` and `target_url`. Access is required to use these parameters.
@@ -61,7 +61,7 @@ jobs:
       - uses: github/codespaces-precache@v1.0.1
         with:
           regions: WestUs2
-          sku_name: standardLinux32GB
+          sku_name: standardLinux32gb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
