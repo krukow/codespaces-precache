@@ -42,7 +42,7 @@ The following properties can be added as input properties using [jobs.<job_id>.s
 |`sku_name` | yes | Machine type for the cached codespaces. Example: `standardLinux32GB`|
 
 ##### Other input properties
-There are 2 additional input parameters used by GitHub Codespaces developers for developing and troubleshooting: `target` and `target_url`. Additional access is required to use these parameters.
+There are 2 additional input parameters for GitHub Codespaces developer use only: `target` and `target_url`. Access is required to use these parameters.
 
 ### Standard Template
 
