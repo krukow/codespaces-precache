@@ -18,7 +18,9 @@ Once you have a target user with narrowly-scoped repository permissions, [Create
 
 ### Step 1b: Add the access token as a repository secret
 
-[Create a repository secret](https://docs.github.com/en/actions/reference/encrypted-secrets#creating-encrypted-secrets-for-a-repository) with a name of `EXPERIMENTAL_CODESPACE_CACHE_TOKEN` and a value of the token you just created. This secret value will be used in the precaching process to set up your precached codespaces.
+[Create a repository secret](https://docs.github.com/en/actions/reference/encrypted-secrets#creating-encrypted-secrets-for-a-repository). In repository settings, under the Secrets tab and Codespaces sub-menu option, create a secret with a name of `EXPERIMENTAL_CODESPACE_CACHE_TOKEN` and a value of the token you just created. This secret value will be used in the precaching process to set up your precached codespaces. The url to create the secret is `https://github.com/[organization name]/[repository name]/settings/secrets/codespaces/new`.
+
+<img width="1238" alt="Adding EXPERIMENTAL_CODESPACE_CACHE_TOKEN to repository codespaces secrets" src="https://user-images.githubusercontent.com/4596845/129975552-9d562c9b-32d1-4126-87e0-41f38af2bfe8.png">
 
 ## Step 2: Create the workflow file
 
