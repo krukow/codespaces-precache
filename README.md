@@ -74,11 +74,11 @@ jobs:
 
 Check the action logs for an error message or a success response with a state of 'pending' - this means the prebuild is being set up. It may take some time to set up the first time, so wait a few minutes and try creating a codespace to see if it is created from a prebuild.
 
-Action failure looks like:
+#### Action failure looks like:
 
 ![Screen Shot 2021-08-26 at 12 54 37 PM](https://user-images.githubusercontent.com/5428933/131005400-68daaa3b-7a28-4d8e-bfa1-c22fbcb21170.png)
 
-Action success response looks like:
+#### Action success response looks like:
 
 ![Screen Shot 2021-08-26 at 11 54 33 AM](https://user-images.githubusercontent.com/5428933/131005421-e1292e23-095b-4eee-9839-ebec31924b07.png)
 
