@@ -67,3 +67,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+## Troubleshooting
+
+### How do I know if my new codespace was created from a prebuild?
+There's an environment value set when you first create the codespace. You can paste this command into the built-in terminal:
+```
+$ cat /workspaces/.codespaces/shared/environment-variables.json | jq '.ACTION_NAME'
+"createFromPrebuild"
+```
+If the output is `"createFromPrebuild"` it was newly created from a prebuild.
