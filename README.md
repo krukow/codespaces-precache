@@ -7,7 +7,7 @@ Your organization must have been granted access to this experimental feature in 
 
 ## Step 1: Set up access token
 
-In order to use this action, you must have a valid access token set in your [codespace repository secrets](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-encrypted-secrets-for-your-codespaces) under the name `EXPERIMENTAL_CODESPACE_CACHE_TOKEN`. The token must have access to your target repository for precached codespaces.
+In order to use this action, you will need to create a valid access token and set it in your [codespace repository secrets](https://docs.github.com/en/codespaces/managing-your-codespaces/managing-encrypted-secrets-for-your-codespaces) under the name `EXPERIMENTAL_CODESPACE_CACHE_TOKEN`. The token will need access to your target repository for precached codespaces.
 
 ### Step 1a: Generate access token
 The token can be generated for any user. However, we highly recommend using a bot user with permission only to your target repository, or creating a new user and granting them permission to the target repository. This is because the access token `repo` permission grants access to all repositories the user has access to.
@@ -24,7 +24,7 @@ Once you have a target user with narrowly-scoped repository permissions, [Create
 
 ## Step 2: Create the workflow file
 
-[Create a workflow file](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions) in your repo that uses the `github/codespaces-precache` action.
+[Create a workflow file](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions) in your repo from the Actions tab that uses the `github/codespaces-precache` action.
 
 ### Properties
 
