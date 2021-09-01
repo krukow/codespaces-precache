@@ -43,6 +43,20 @@ The following properties can be added as input properties using [jobs.<job_id>.s
 |`regions` | yes | Separated region(s) to create cached codespaces in. Multiple regions can be specified, separated by spaces. Valid regions are: `WestUs2` `EastUs` `WestEurope` `SouthEastAsia`|
 |`sku_name` | yes | Machine type for the cached codespaces. Example: `standardLinux32gb`|
 
+##### Valid Sku names
+
+|Cores | Sku name
+-------|--------
+|2-core |	basicLinux32gb|
+|4-core	| standardLinux32gb|
+|8-core	| premiumLinux|
+|16-core | largePremiumLinux*|
+|32-core | xLargePremiumLinux*|
+
+*_Contact us to get access_
+
+See [sku pricing info for more](https://docs.github.com/en/billing/managing-billing-for-github-codespaces/about-billing-for-codespaces#codespaces-pricing).
+
 ##### Other input properties
 There are 2 additional input parameters for GitHub Codespaces developer use only: `target` and `target_url`. Access is required to use these parameters.
 
