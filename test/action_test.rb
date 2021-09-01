@@ -275,7 +275,9 @@ class FakeGitHubAPI < Sinatra::Base
 
   post "/vscs_internal/codespaces/repository/:username/:repo_name/prebuild/templates" do
     queue << request
-    job_ids.shift
+    {
+      job_status_id: job_ids.shift
+    }.to_json
   end
 
   get "/vscs_internal/codespaces/repository/:username/:repo_name/prebuild_template_provisioning_status/:job_id" do

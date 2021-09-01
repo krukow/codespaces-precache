@@ -46,10 +46,11 @@ for region in $INPUT_REGIONS; do
     }
 JSON
 )
-  job_id=$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
+  response=$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
     -H "Content-Type: application/json; charset=utf-8" \
     -H "Authorization: token $GITHUB_TOKEN" \
     -d "$body")
-
+  job_id=$(echo $response | jq -r '.job_status_id') 
+  echo $job_id
   poll_status $job_id
 done
