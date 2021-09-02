@@ -15,7 +15,6 @@ poll_status () {
 
   state=$(echo $status_data | jq -r '.state') 
 
-  echo $state
   if [[ "$state" == "succeeded" ]]; then
     return 0
   else
