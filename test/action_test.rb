@@ -3,6 +3,7 @@ require "minitest/autorun"
 require "sinatra/base"
 require "open3"
 require "webrick"
+require "pry"
 
 # To run all tests:
 # $ bundle exec rake
@@ -28,10 +29,10 @@ class ActionTest < MiniTest::Test
       },
       job_ids: [job_id],
       status_responses: {
-        job_id => ["complete"]
+        job_id => [{"state" => "succeeded", message: nil, error_logs_available: false}]
       },
     )
-
+    
     assert_predicate job_status, :success?
 
     assert_equal 2, api_requests.length
@@ -67,13 +68,17 @@ class ActionTest < MiniTest::Test
       },
       job_ids: [job_id],
       status_responses: {
-        job_id => ["pending", "running", "reticulating-splines", "complete"]
+        job_id => [
+          {"state" => "processing", message: nil, error_logs_available: false},
+          {"state" => "processing", message: nil, error_logs_available: false},
+          {"state" => "succeeded", message: nil, error_logs_available: false}
+        ]
       },
     )
 
     assert_predicate job_status, :success?
 
-    assert_equal 5, api_requests.length
+    assert_equal 4, api_requests.length
 
     assert_predicate api_requests[0], :post?
     assert_equal(
@@ -89,7 +94,6 @@ class ActionTest < MiniTest::Test
     assert_predicate api_requests[1], :get?
     assert_predicate api_requests[2], :get?
     assert_predicate api_requests[3], :get?
-    assert_predicate api_requests[4], :get?
   end
 
   def test_optional_inputs
@@ -107,7 +111,7 @@ class ActionTest < MiniTest::Test
       },
       job_ids: [job_id],
       status_responses: {
-        job_id => ["complete"]
+        job_id => [{"state" => "succeeded", message: nil, error_logs_available: false}]
       },
     )
 
@@ -146,8 +150,8 @@ class ActionTest < MiniTest::Test
       },
       job_ids: ["west-job-id", "east-job-id"],
       status_responses: {
-        "west-job-id" => ["complete"],
-        "east-job-id" => ["complete"],
+        "west-job-id" => [{"state" => "succeeded", message: nil, error_logs_available: false}],
+        "east-job-id" => [{"state" => "succeeded", message: nil, error_logs_available: false}]
       },
     )
 
@@ -266,6 +270,6 @@ class FakeGitHubAPI < Sinatra::Base
   get "/vscs_internal/codespaces/repository/:username/:repo_name/prebuild_templates/provisioning_statuses/:job_id" do
     queue << request
     status = status_responses[params[:job_id]].shift
-    {status: status}.to_json
+    status.to_json
   end
 end

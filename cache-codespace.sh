@@ -2,7 +2,7 @@
 
 get_status () {
   local job_id="$1"
-  status=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild_templates/provisioning_statuses/${job_id}" \
+  status_data=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild_templates/provisioning_statuses/${job_id}" \
     -H "Content-Type: application/json; charset=utf-8" \
     -H "Authorization: token $GITHUB_TOKEN")
 }
@@ -13,9 +13,10 @@ poll_status () {
 
   get_status "$job_id"
 
-  echo $status
+  state=$(echo $status_data | jq -r '.state') 
 
-  if [[ "$status" == *complete* ]]; then
+  echo $state
+  if [[ "$state" == *succeeded* ]]; then
     return 0
   else
     sleep ${POLLING_DELAY:-5}
