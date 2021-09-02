@@ -17,6 +17,8 @@ poll_status () {
 
   if [[ "$state" == "succeeded" ]]; then
     return 0
+  elif [[ "$state" == "failed" ]]; then
+    return 1
   else
     sleep ${POLLING_DELAY:-5}
     poll_status "$job_id" $(($attempt+1))

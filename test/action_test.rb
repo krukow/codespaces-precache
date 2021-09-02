@@ -55,6 +55,45 @@ class ActionTest < MiniTest::Test
     )
   end
 
+  def test_immediate_failure
+    job_id = "my-job-123"
+    job_status, api_requests = run_action(
+      env: {
+        "GITHUB_REF" => "main",
+        "GITHUB_REPOSITORY" => "monalisa/smile",
+        "GITHUB_SHA" => "abcdef1234567890",
+        "GITHUB_TOKEN" => "my-very-secret-token",
+        "INPUT_REGIONS" => "WestUs2",
+        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
+      },
+      job_ids: [job_id],
+      status_responses: {
+        job_id => [{"state" => "failed", message: "Error message", error_logs_available: false}]
+      },
+    )
+    
+    refute job_status.success?
+
+    assert_equal 2, api_requests.length
+
+    assert_predicate api_requests[0], :post?
+    assert_equal(
+      {
+        "ref" => "main",
+        "location" => "WestUs2",
+        "sku_name" => "futuristicQuantumComputer",
+        "sha" => "abcdef1234567890",
+      },
+      JSON.load(api_requests[0].body)
+    )
+
+    assert_predicate api_requests[1], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/#{job_id}",
+      api_requests[1].path
+    )
+  end
+
   def test_polling_success
     job_id = "my-job-123"
     job_status, api_requests = run_action(
@@ -211,7 +250,6 @@ class ActionTest < MiniTest::Test
         puts "Error output:\n#{error_output}\n"
       end
     end
-
     [status, api_requests]
   end
 
