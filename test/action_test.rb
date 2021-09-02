@@ -39,7 +39,7 @@ class ActionTest < MiniTest::Test
 
     assert_predicate api_requests[1], :get?
     assert_equal(
-      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_template_provisioning_status/#{job_id}",
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/#{job_id}",
       api_requests[1].path
     )
   end
@@ -119,7 +119,7 @@ class ActionTest < MiniTest::Test
 
     assert_predicate api_requests[1], :get?
     assert_equal(
-      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_template_provisioning_status/#{job_id}",
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/#{job_id}",
       api_requests[1].path
     )
   end
@@ -158,7 +158,7 @@ class ActionTest < MiniTest::Test
 
     assert_predicate api_requests[1], :get?
     assert_equal(
-      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_template_provisioning_status/west-job-id",
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/west-job-id",
       api_requests[1].path
     )
 
@@ -175,7 +175,7 @@ class ActionTest < MiniTest::Test
 
     assert_predicate api_requests[3], :get?
     assert_equal(
-      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_template_provisioning_status/east-job-id",
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/east-job-id",
       api_requests[3].path
     )
   end
@@ -280,7 +280,7 @@ class FakeGitHubAPI < Sinatra::Base
     }.to_json
   end
 
-  get "/vscs_internal/codespaces/repository/:username/:repo_name/prebuild_template_provisioning_status/:job_id" do
+  get "/vscs_internal/codespaces/repository/:username/:repo_name/prebuild_templates/provisioning_statuses/:job_id" do
     queue << request
     status = status_responses[params[:job_id]].shift
     {status: status}.to_json
