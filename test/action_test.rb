@@ -4,6 +4,16 @@ require "sinatra/base"
 require "open3"
 require "webrick"
 
+# To run all tests:
+# $ bundle exec rake
+
+# To run with debug info:
+# $ DEBUG=true bundle exec rake
+
+# To run one test:
+# $ bundle exec rake test TESTOPTS="--name=<test name here>"
+
+
 class ActionTest < MiniTest::Test
   def test_immediate_success
     job_id = "my-job-123"
