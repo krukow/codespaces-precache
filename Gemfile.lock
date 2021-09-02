@@ -24,6 +24,7 @@ GEM
 
 PLATFORMS
   x86_64-darwin-20
+  x86_64-linux
 
 DEPENDENCIES
   minitest
@@ -33,4 +34,4 @@ DEPENDENCIES
   webrick
 
 BUNDLED WITH
-   2.2.22
+   2.2.25
