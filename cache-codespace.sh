@@ -16,7 +16,7 @@ poll_status () {
   state=$(echo $status_data | jq -r '.state') 
 
   echo $state
-  if [[ "$state" == *succeeded* ]]; then
+  if [[ "$state" == "succeeded" ]]; then
     return 0
   else
     sleep ${POLLING_DELAY:-5}
