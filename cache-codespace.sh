@@ -51,6 +51,5 @@ JSON
     -H "Authorization: token $GITHUB_TOKEN" \
     -d "$body")
   job_id=$(echo $response | jq -r '.job_status_id') 
-  echo $job_id
   poll_status $job_id
 done
