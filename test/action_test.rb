@@ -180,33 +180,6 @@ class ActionTest < MiniTest::Test
     )
   end
 
-  def test_too_many_attempts
-    job_id = "my-job-123"
-    job_status, api_requests = run_action(
-      env: {
-        "GITHUB_REF" => "main",
-        "GITHUB_REPOSITORY" => "monalisa/smile",
-        "GITHUB_SHA" => "abcdef1234567890",
-        "GITHUB_TOKEN" => "my-very-secret-token",
-        "INPUT_REGIONS" => "WestUs2",
-        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
-        "MAX_POLLING_ATTEMPTS" => "2",
-      },
-      job_ids: [job_id],
-      status_responses: {
-        job_id => ["pending", "pending", "pending"],
-      },
-    )
-
-    refute_predicate job_status, :success?
-
-    assert_equal 3, api_requests.length
-
-    assert_predicate api_requests[0], :post?
-    assert_predicate api_requests[1], :get?
-    assert_predicate api_requests[2], :get?
-  end
-
   def run_action(env:, job_ids:, status_responses:)
     status = nil
     api_requests = with_fake_api_server_running(job_ids, status_responses) do |fake_api_url|

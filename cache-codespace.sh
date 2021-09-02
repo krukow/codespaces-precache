@@ -17,9 +17,6 @@ poll_status () {
 
   if [[ "$status" == *complete* ]]; then
     return 0
-  elif [[ "$attempt" -ge ${MAX_POLLING_ATTEMPTS:-600} ]]; then
-    >&2 echo "Giving up after $attempt attempts to get the provisioning status"
-    return 1
   else
     sleep ${POLLING_DELAY:-5}
     poll_status "$job_id" $(($attempt+1))
