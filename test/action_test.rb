@@ -18,6 +18,11 @@ require "pry"
 class ActionTest < MiniTest::Test
   def test_immediate_success
     job_id = "my-job-123"
+    create_prebuild_template_response = {
+      job_status_id: job_id
+    } 
+     
+    
     job_status, api_requests = run_action(
       env: {
         "GITHUB_REF" => "main",
@@ -27,7 +32,7 @@ class ActionTest < MiniTest::Test
         "INPUT_REGIONS" => "WestUs2",
         "INPUT_SKU_NAME" => "futuristicQuantumComputer",
       },
-      job_ids: [job_id],
+      create_prebuild_template_responses: [create_prebuild_template_response],
       status_responses: {
         job_id => [{"state" => "succeeded", message: nil, error_logs_available: false}]
       },
@@ -57,6 +62,10 @@ class ActionTest < MiniTest::Test
 
   def test_immediate_failure
     job_id = "my-job-123"
+    create_prebuild_template_response = {
+      job_status_id: job_id
+    } 
+    
     job_status, api_requests = run_action(
       env: {
         "GITHUB_REF" => "main",
@@ -66,7 +75,7 @@ class ActionTest < MiniTest::Test
         "INPUT_REGIONS" => "WestUs2",
         "INPUT_SKU_NAME" => "futuristicQuantumComputer",
       },
-      job_ids: [job_id],
+      create_prebuild_template_responses: [create_prebuild_template_response],
       status_responses: {
         job_id => [{"state" => "failed", message: "Error message", error_logs_available: false}]
       },
@@ -96,6 +105,9 @@ class ActionTest < MiniTest::Test
 
   def test_polling_success
     job_id = "my-job-123"
+    create_prebuild_template_response = {
+      job_status_id: job_id
+    } 
     job_status, api_requests = run_action(
       env: {
         "GITHUB_REF" => "main",
@@ -105,7 +117,7 @@ class ActionTest < MiniTest::Test
         "INPUT_REGIONS" => "WestUs2",
         "INPUT_SKU_NAME" => "futuristicQuantumComputer",
       },
-      job_ids: [job_id],
+      create_prebuild_template_responses: [create_prebuild_template_response],
       status_responses: {
         job_id => [
           {"state" => "processing", message: nil, error_logs_available: false},
@@ -137,6 +149,9 @@ class ActionTest < MiniTest::Test
 
   def test_optional_inputs
     job_id = "my-job-123"
+    create_prebuild_template_response = {
+      job_status_id: job_id
+    } 
     job_status, api_requests = run_action(
       env: {
         "GITHUB_REF" => "main",
@@ -148,7 +163,7 @@ class ActionTest < MiniTest::Test
         "INPUT_TARGET" => "localdev",
         "INPUT_TARGET_URL" => "http://localhost/example",
       },
-      job_ids: [job_id],
+      create_prebuild_template_responses: [create_prebuild_template_response],
       status_responses: {
         job_id => [{"state" => "succeeded", message: nil, error_logs_available: false}]
       },
@@ -178,6 +193,10 @@ class ActionTest < MiniTest::Test
   end
 
   def test_multiple_locations
+    create_prebuild_template_responses = [
+      {job_status_id: "west-job-id"},
+      {job_status_id: "east-job-id"} 
+    ] 
     job_status, api_requests = run_action(
       env: {
         "GITHUB_REF" => "main",
@@ -187,7 +206,7 @@ class ActionTest < MiniTest::Test
         "INPUT_REGIONS" => "WestUs2 EastUs1",
         "INPUT_SKU_NAME" => "futuristicQuantumComputer",
       },
-      job_ids: ["west-job-id", "east-job-id"],
+      create_prebuild_template_responses: create_prebuild_template_responses,
       status_responses: {
         "west-job-id" => [{"state" => "succeeded", message: nil, error_logs_available: false}],
         "east-job-id" => [{"state" => "succeeded", message: nil, error_logs_available: false}]
@@ -233,9 +252,9 @@ class ActionTest < MiniTest::Test
     )
   end
 
-  def run_action(env:, job_ids:, status_responses:)
+  def run_action(env:, create_prebuild_template_responses:, status_responses:)
     status = nil
-    api_requests = with_fake_api_server_running(job_ids, status_responses) do |fake_api_url|
+    api_requests = with_fake_api_server_running(create_prebuild_template_responses, status_responses) do |fake_api_url|
       full_env = env.merge(
         "GITHUB_API_URL" => fake_api_url,
         "POLLING_DELAY" => "0",
@@ -253,12 +272,12 @@ class ActionTest < MiniTest::Test
     [status, api_requests]
   end
 
-  def with_fake_api_server_running(job_ids, status_responses)
+  def with_fake_api_server_running(create_prebuild_template_responses, status_responses)
     port = 8888
     queue = Queue.new
 
     server_thread = Thread.new do
-      FakeGitHubAPI.new(job_ids, status_responses, queue) do |app|
+      FakeGitHubAPI.new(create_prebuild_template_responses, status_responses, queue) do |app|
         webrick_options = {Port: port}
 
         unless ENV["DEBUG"]
@@ -289,10 +308,10 @@ class ActionTest < MiniTest::Test
 end
 
 class FakeGitHubAPI < Sinatra::Base
-  attr_reader :job_ids, :status_responses, :queue
+  attr_reader :create_prebuild_template_responses, :status_responses, :queue
 
-  def initialize(job_ids, status_responses, queue)
-    @job_ids = job_ids
+  def initialize(create_prebuild_template_responses, status_responses, queue)
+    @create_prebuild_template_responses = create_prebuild_template_responses
     @status_responses = status_responses
     @queue = queue
     super nil
@@ -300,9 +319,8 @@ class FakeGitHubAPI < Sinatra::Base
 
   post "/vscs_internal/codespaces/repository/:username/:repo_name/prebuild/templates" do
     queue << request
-    {
-      job_status_id: job_ids.shift
-    }.to_json
+    response = create_prebuild_template_responses.shift
+    response.to_json
   end
 
   get "/vscs_internal/codespaces/repository/:username/:repo_name/prebuild_templates/provisioning_statuses/:job_id" do
