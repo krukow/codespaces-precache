@@ -16,13 +16,10 @@ require "pry"
 
 
 class ActionTest < MiniTest::Test
-  def test_immediate_success
+  def test_immediate_polling_success
     job_id = "my-job-123"
-    create_prebuild_template_response = {
-      job_status_id: job_id
-    } 
-     
-    
+    create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
+      
     job_status, api_requests = run_action(
       env: {
         "GITHUB_REF" => "main",
@@ -60,12 +57,10 @@ class ActionTest < MiniTest::Test
     )
   end
 
-  def test_immediate_failure
+  def test_immediate_polling_failure
     job_id = "my-job-123"
-    create_prebuild_template_response = {
-      job_status_id: job_id
-    } 
-    
+    create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
+
     job_status, api_requests = run_action(
       env: {
         "GITHUB_REF" => "main",
@@ -105,9 +100,7 @@ class ActionTest < MiniTest::Test
 
   def test_polling_success
     job_id = "my-job-123"
-    create_prebuild_template_response = {
-      job_status_id: job_id
-    } 
+    create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
     job_status, api_requests = run_action(
       env: {
         "GITHUB_REF" => "main",
@@ -149,9 +142,7 @@ class ActionTest < MiniTest::Test
 
   def test_optional_inputs
     job_id = "my-job-123"
-    create_prebuild_template_response = {
-      job_status_id: job_id
-    } 
+    create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
     job_status, api_requests = run_action(
       env: {
         "GITHUB_REF" => "main",
@@ -194,8 +185,8 @@ class ActionTest < MiniTest::Test
 
   def test_multiple_locations
     create_prebuild_template_responses = [
-      {job_status_id: "west-job-id"},
-      {job_status_id: "east-job-id"} 
+      CreatePrebuildTemplateResponse.new(job_status_id: "west-job-id"),
+      CreatePrebuildTemplateResponse.new(job_status_id: "east-job-id"),
     ] 
     job_status, api_requests = run_action(
       env: {
@@ -252,8 +243,35 @@ class ActionTest < MiniTest::Test
     )
   end
 
+  def test_immediate_creation_failure
+    job_id = "my-job-123"
+    error_message = "The codespaces secret \"EXPERIMENTAL_CODESPACE_CACHE_TOKEN\" must be set."
+    create_prebuild_template_response = ErrorResponse.new(
+      status: 404,
+      message: error_message
+    )
+    
+    job_status, api_requests, error_output = run_action(
+      env: {
+        "GITHUB_REF" => "main",
+        "GITHUB_REPOSITORY" => "monalisa/smile",
+        "GITHUB_SHA" => "abcdef1234567890",
+        "GITHUB_TOKEN" => "my-very-secret-token",
+        "INPUT_REGIONS" => "WestUs2",
+        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
+      },
+      status_responses: {},
+      create_prebuild_template_responses: [create_prebuild_template_response],
+    )
+    
+    refute_predicate job_status, :success?
+
+    assert_includes error_output, error_message
+  end
+ 
   def run_action(env:, create_prebuild_template_responses:, status_responses:)
     status = nil
+    error_output = nil
     api_requests = with_fake_api_server_running(create_prebuild_template_responses, status_responses) do |fake_api_url|
       full_env = env.merge(
         "GITHUB_API_URL" => fake_api_url,
@@ -262,14 +280,13 @@ class ActionTest < MiniTest::Test
       output, error_output, status = Open3.capture3(
         full_env,
         File.expand_path("../../cache-codespace.sh", __FILE__),
-      )
-
+      ) 
       if ENV["DEBUG"]
         puts "Standard output:\n#{output}\n"
         puts "Error output:\n#{error_output}\n"
       end
     end
-    [status, api_requests]
+    [status, api_requests, error_output]
   end
 
   def with_fake_api_server_running(create_prebuild_template_responses, status_responses)
@@ -320,7 +337,8 @@ class FakeGitHubAPI < Sinatra::Base
   post "/vscs_internal/codespaces/repository/:username/:repo_name/prebuild/templates" do
     queue << request
     response = create_prebuild_template_responses.shift
-    response.to_json
+    status response.status
+    body response.body
   end
 
   get "/vscs_internal/codespaces/repository/:username/:repo_name/prebuild_templates/provisioning_statuses/:job_id" do
@@ -328,4 +346,35 @@ class FakeGitHubAPI < Sinatra::Base
     status = status_responses[params[:job_id]].shift
     status.to_json
   end
+end
+
+class CreatePrebuildTemplateResponse
+  attr_reader :job_status_id
+ 
+  def initialize(job_status_id:)
+    @job_status_id = job_status_id
+  end
+
+  def body
+    {job_status_id: job_status_id}.to_json
+  end
+
+  def status
+    200
+  end
+
+end
+
+class ErrorResponse
+  attr_reader :status, :message
+ 
+  def initialize(message:, status:)
+    @message = message
+    @status = status
+  end
+
+  def body
+    {message: message}.to_json
+  end
+
 end

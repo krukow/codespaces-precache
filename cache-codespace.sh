@@ -25,6 +25,15 @@ poll_status () {
   fi
 }
 
+handle_error() {
+  error_message=$(jq -r '.message' response_body.txt)
+  >&2 echo "*************************"
+  >&2 echo "Error message from server"
+  >&2 echo "$error_message"
+  >&2 echo "*************************"
+  exit 1
+}
+
 if [[ -n "$INPUT_TARGET" ]]; then
   target="\"vscs_target\":\"$INPUT_TARGET\","
 fi
@@ -45,10 +54,17 @@ for region in $INPUT_REGIONS; do
     }
 JSON
 )
-  response=$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
+  http_code=$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
     -H "Content-Type: application/json; charset=utf-8" \
     -H "Authorization: token $GITHUB_TOKEN" \
-    -d "$body")
-  job_id=$(echo $response | jq -r '.job_status_id') 
-  poll_status $job_id
+    -d "$body" \
+    -o response_body.txt \
+    -w "%{http_code}")
+
+  if [ $http_code != "200" ]; then
+    handle_error
+  else
+    job_id=$(jq -r '.job_status_id' response_body.txt)
+    poll_status $job_id
+  fi
 done
