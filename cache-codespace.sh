@@ -7,17 +7,34 @@ get_status () {
     -H "Authorization: token $GITHUB_TOKEN")
 }
 
+display_template_failure() {
+  local status_data="$1"
+
+  error_logs_available="$(echo $status_data | jq -r '.error_logs_available')"
+
+  if [[ "$error_logs_available" == "true" ]]; then
+    guid="$(echo $status_data | jq -r '.guid')"
+    build_logs=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuilds/environments/$guid/logs" \
+      -H "Content-Type: application/json; charset=utf-8" \
+      -H "Authorization: token $GITHUB_TOKEN")
+    handle_error_message "$build_logs"
+  else
+    handle_error_message "$(echo $status_data | jq -r '.message')"
+  fi
+}
+
 poll_status () {
   local job_id="$1"
   local attempt="${2:-1}"
 
   get_status "$job_id"
 
-  state=$(echo $status_data | jq -r '.state') 
+  state=$(echo $status_data | jq -r '.state')
 
   if [[ "$state" == "succeeded" ]]; then
     return 0
   elif [[ "$state" == "failed" ]]; then
+    display_template_failure "$status_data"
     return 1
   else
     sleep ${POLLING_DELAY:-5}
@@ -25,13 +42,12 @@ poll_status () {
   fi
 }
 
-handle_error() {
-  error_message=$(jq -r '.message' response_body.txt)
+handle_error_message() {
+  local error_message="$1"
   >&2 echo "*************************"
   >&2 echo "Error message from server"
   >&2 echo "$error_message"
   >&2 echo "*************************"
-  exit 1
 }
 
 if [[ -n "$INPUT_TARGET" ]]; then
@@ -62,7 +78,8 @@ JSON
     -w "%{http_code}")
 
   if [ $http_code != "200" ]; then
-    handle_error
+    handle_error_message "$(jq -r '.message' response_body.txt)"
+    exit 1
   else
     job_id=$(jq -r '.job_status_id' response_body.txt)
     poll_status $job_id
