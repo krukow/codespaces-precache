@@ -6,13 +6,13 @@ require "webrick"
 require "pry"
 
 # To run all tests:
-# $ bundle exec rake
+# $ bundle exec m
 
 # To run with debug info:
-# $ DEBUG=true bundle exec rake
+# $ DEBUG=true bundle exec m 
 
 # To run one test:
-# $ bundle exec rake test TESTOPTS="--name=<test name here>"
+# $ bundle exec m test/action_test.rb:19
 
 
 class ActionTest < MiniTest::Test
