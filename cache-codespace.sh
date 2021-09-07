@@ -7,22 +7,50 @@ get_status () {
     -H "Authorization: token $GITHUB_TOKEN")
 }
 
+display_template_failure() {
+  local status_data="$1"
+
+  error_logs_available="$(echo $status_data | jq -r '.error_logs_available')"
+  message="$(echo $status_data | jq -r '.message')"
+
+  if [[ "$error_logs_available" == "true" ]]; then
+    guid="$(echo $status_data | jq -r '.guid')"
+    build_logs=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuilds/environments/$guid/logs" \
+      -H "Content-Type: application/json; charset=utf-8" \
+      -H "Authorization: token $GITHUB_TOKEN")
+    handle_error_message "$build_logs"
+  elif [ "$message" != "null" ]; then
+    handle_error_message "$message"
+  else
+    handle_error_message "Something went wrong, please try again."
+  fi
+}
+
 poll_status () {
   local job_id="$1"
   local attempt="${2:-1}"
 
   get_status "$job_id"
 
-  state=$(echo $status_data | jq -r '.state') 
+  state=$(echo $status_data | jq -r '.state')
 
   if [[ "$state" == "succeeded" ]]; then
     return 0
   elif [[ "$state" == "failed" ]]; then
+    display_template_failure "$status_data"
     return 1
   else
     sleep ${POLLING_DELAY:-5}
     poll_status "$job_id" $(($attempt+1))
   fi
+}
+
+handle_error_message() {
+  local error_message="$1"
+  >&2 echo "*************************"
+  >&2 echo "Error message from server"
+  >&2 echo "$error_message"
+  >&2 echo "*************************"
 }
 
 if [[ -n "$INPUT_TARGET" ]]; then
@@ -48,7 +76,16 @@ JSON
   response=$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
     -H "Content-Type: application/json; charset=utf-8" \
     -H "Authorization: token $GITHUB_TOKEN" \
-    -d "$body")
-  job_id=$(echo $response | jq -r '.job_status_id') 
-  poll_status $job_id
+    -d "$body" \
+    -s \
+    -w "%{http_code}" )
+  http_code=${response: -3}
+  response_body=$(echo ${response} | head -c-4)
+  if [ "$http_code" != "200" ]; then
+    handle_error_message "$(echo $response_body | jq -r '.message')"
+    exit 1
+  else
+    job_id=$(echo $response_body | jq -r '.job_status_id')
+    poll_status $job_id
+  fi
 done
