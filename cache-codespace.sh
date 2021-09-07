@@ -11,6 +11,7 @@ display_template_failure() {
   local status_data="$1"
 
   error_logs_available="$(echo $status_data | jq -r '.error_logs_available')"
+  message="$(echo $status_data | jq -r '.message')"
 
   if [[ "$error_logs_available" == "true" ]]; then
     guid="$(echo $status_data | jq -r '.guid')"
@@ -18,8 +19,10 @@ display_template_failure() {
       -H "Content-Type: application/json; charset=utf-8" \
       -H "Authorization: token $GITHUB_TOKEN")
     handle_error_message "$build_logs"
+  elif [ "$message" != "null" ]; then
+    handle_error_message "$message"
   else
-    handle_error_message "$(echo $status_data | jq -r '.message')"
+    handle_error_message "Something went wrong, please try again."
   fi
 }
 

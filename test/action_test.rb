@@ -152,6 +152,32 @@ class ActionTest < MiniTest::Test
     assert_includes error_output, "Build log for #{guid}"
   end
 
+  def test_display_blanket_error_message
+    job_id = "my-job-123"
+    guid = "some-guid"
+    create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
+
+    job_status, api_requests, error_output = run_action(
+      env: {
+        "GITHUB_REF" => "main",
+        "GITHUB_REPOSITORY" => "monalisa/smile",
+        "GITHUB_SHA" => "abcdef1234567890",
+        "GITHUB_TOKEN" => "my-very-secret-token",
+        "INPUT_REGIONS" => "WestUs2",
+        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
+      },
+      create_prebuild_template_responses: [create_prebuild_template_response],
+      status_responses: {
+        job_id => [StatusResponse.new(state: "failed", error_logs_available: false, message: nil, guid: guid)]
+      },
+    )
+
+    refute job_status.success?
+    assert_equal 2, api_requests.length
+
+    assert_includes error_output, "Something went wrong, please try again."
+  end
+
   def test_polling_success
     job_id = "my-job-123"
     create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
