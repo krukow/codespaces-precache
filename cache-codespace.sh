@@ -4,7 +4,8 @@ get_status () {
   local job_id="$1"
   status_data=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild_templates/provisioning_statuses/${job_id}" \
     -H "Content-Type: application/json; charset=utf-8" \
-    -H "Authorization: token $GITHUB_TOKEN")
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -s)
 }
 
 display_template_failure() {
@@ -17,7 +18,8 @@ display_template_failure() {
     guid="$(echo $status_data | jq -r '.guid')"
     build_logs=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuilds/environments/$guid/logs" \
       -H "Content-Type: application/json; charset=utf-8" \
-      -H "Authorization: token $GITHUB_TOKEN")
+      -H "Authorization: token $GITHUB_TOKEN" \
+      -s )
     handle_error_message "$build_logs"
   elif [ "$message" != "null" ]; then
     handle_error_message "$message"
@@ -29,6 +31,12 @@ display_template_failure() {
 poll_status () {
   local job_id="$1"
   local attempt="${2:-1}"
+
+  if [[ $(( $attempt % 5  )) == 0 ]]; then 
+    echo "checking status..."
+  else
+    echo "..."
+  fi
 
   get_status "$job_id"
 
