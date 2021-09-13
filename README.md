@@ -24,7 +24,7 @@ Once you have a target user with narrowly-scoped repository permissions, [Create
 
 ## Step 2: Create the workflow file
 
-[Create a workflow file](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions) in your repo from the Actions tab that uses the `github/codespaces-precache` action.
+[Create a workflow file](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions) in your repo that uses the `github/codespaces-precache` action.
 
 ### Properties
 
