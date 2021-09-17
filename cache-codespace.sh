@@ -55,10 +55,9 @@ poll_status () {
 
 handle_error_message() {
   local error_message="$1"
-  >&2 echo "*************************"
-  >&2 echo "Error message from server"
+  >&2 echo "*************************Error*************************"
   >&2 echo "$error_message"
-  >&2 echo "*************************"
+  >&2 echo "*************************Error*************************"
 }
 
 if [[ -n "$INPUT_TARGET" ]]; then
