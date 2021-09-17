@@ -33,7 +33,7 @@ poll_status () {
   local attempt="${2:-1}"
 
   if [[ $(( $attempt % 5  )) == 0 ]]; then 
-    echo "checking status..."
+    echo "prebuild creation in still progress..."
   else
     echo "..."
   fi
