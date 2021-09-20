@@ -32,10 +32,10 @@ poll_status () {
   local job_id="$1"
   local attempt="${2:-1}"
 
-  if [[ $(( $attempt % 5  )) == 0 ]]; then 
-    echo "prebuild creation in still progress..."
+  if [[ $attempt > 10 ]]; then 
+    echo "polling creation in progress, this may take a while..."
   else
-    echo "..."
+    echo "still in progress..."
   fi
 
   get_status "$job_id"
@@ -48,7 +48,7 @@ poll_status () {
     display_template_failure "$status_data"
     return 1
   else
-    sleep ${POLLING_DELAY:-5}
+    sleep ${POLLING_DELAY:-60}
     poll_status "$job_id" $(($attempt+1))
   fi
 }
