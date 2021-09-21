@@ -33,7 +33,7 @@ poll_status () {
   local attempt="${2:-1}"
 
   if [[ $attempt > 10 ]]; then 
-    echo "polling creation in progress, this may take a while..."
+    echo "creation in progress, this may take a while..."
   else
     echo "still in progress..."
   fi
@@ -47,9 +47,12 @@ poll_status () {
   elif [[ "$state" == "failed" ]]; then
     display_template_failure "$status_data"
     return 1
-  else
+  elif [[ "$state" == "processing" ]]; then 
     sleep ${POLLING_DELAY:-60}
     poll_status "$job_id" $(($attempt+1))
+  else
+    display_template_failure "$status_data"
+    return 1
   fi
 }
 

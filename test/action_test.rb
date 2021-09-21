@@ -98,6 +98,89 @@ class ActionTest < MiniTest::Test
     )
   end
 
+  def test_polling_failure_on_non_processing_status_return_message
+    job_id = "my-job-123"
+    create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
+
+    job_status, api_requests = run_action(
+      env: {
+        "GITHUB_REF" => "main",
+        "GITHUB_REPOSITORY" => "monalisa/smile",
+        "GITHUB_SHA" => "abcdef1234567890",
+        "GITHUB_TOKEN" => "my-very-secret-token",
+        "INPUT_REGIONS" => "WestUs2",
+        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
+      },
+      create_prebuild_template_responses: [create_prebuild_template_response],
+      status_responses: {
+        job_id => [StatusResponse.new(state: "other")]
+      },
+    )
+
+    refute job_status.success?
+
+    assert_equal 2, api_requests.length
+
+    assert_predicate api_requests[0], :post?
+    assert_equal(
+      {
+        "ref" => "main",
+        "location" => "WestUs2",
+        "sku_name" => "futuristicQuantumComputer",
+        "sha" => "abcdef1234567890",
+      },
+      JSON.load(api_requests[0].body)
+    )
+
+    assert_predicate api_requests[1], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/#{job_id}",
+      api_requests[1].path
+    )
+  end
+
+  def test_polling_failure_on_404
+    job_id = "my-job-123"
+    create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
+    error_message = "Not Found"
+    job_status, api_requests, error_output = run_action(
+      env: {
+        "GITHUB_REF" => "main",
+        "GITHUB_REPOSITORY" => "monalisa/smile",
+        "GITHUB_SHA" => "abcdef1234567890",
+        "GITHUB_TOKEN" => "my-very-secret-token",
+        "INPUT_REGIONS" => "WestUs2",
+        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
+      },
+      create_prebuild_template_responses: [create_prebuild_template_response],
+      status_responses: {
+        job_id => [ErrorResponse.new(status: 404, message: error_message)]
+      },
+    )
+
+    refute job_status.success?
+
+    assert_equal 2, api_requests.length
+
+    assert_predicate api_requests[0], :post?
+    assert_equal(
+      {
+        "ref" => "main",
+        "location" => "WestUs2",
+        "sku_name" => "futuristicQuantumComputer",
+        "sha" => "abcdef1234567890",
+      },
+      JSON.load(api_requests[0].body)
+    )
+
+    assert_predicate api_requests[1], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/#{job_id}",
+      api_requests[1].path
+    )
+    assert_includes error_output, error_message
+  end
+
   def test_display_error_message_on_polling_failure
     job_id = "my-job-123"
     create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
