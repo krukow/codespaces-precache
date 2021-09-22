@@ -414,10 +414,12 @@ class ActionTest < MiniTest::Test
 
   def test_immediate_creation_failure
     job_id = "my-job-123"
-    error_message = "The codespaces secret \"EXPERIMENTAL_CODESPACE_CACHE_TOKEN\" must be set."
+    error_message = 'The codespaces secret must be set.'
+    documentation_url = "http://fake.api.com"
     create_prebuild_template_response = ErrorResponse.new(
       status: 404,
-      message: error_message
+      message: error_message,
+      documentation_url: documentation_url
     )
 
     job_status, api_requests, error_output = run_action(
@@ -436,6 +438,7 @@ class ActionTest < MiniTest::Test
     refute_predicate job_status, :success?
 
     assert_includes error_output, error_message
+    assert_includes error_output, documentation_url
   end
 
   def run_action(env:, create_prebuild_template_responses:, status_responses:)
@@ -562,15 +565,16 @@ class StatusResponse
 end
 
 class ErrorResponse
-  attr_reader :status, :message
+  attr_reader :status, :message, :documentation_url
 
-  def initialize(message:, status:)
+  def initialize(message:, status:, documentation_url: nil)
     @message = message
     @status = status
+    @documentation_url = documentation_url
   end
 
   def body
-    {message: message}.to_json
+    {message: message, documentation_url: documentation_url}.to_json
   end
 
 end
