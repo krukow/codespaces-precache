@@ -102,7 +102,7 @@ class ActionTest < MiniTest::Test
     job_id = "my-job-123"
     create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
 
-    job_status, api_requests = run_action(
+    job_status, api_requests, error_output = run_action(
       env: {
         "GITHUB_REF" => "main",
         "GITHUB_REPOSITORY" => "monalisa/smile",
@@ -137,9 +137,10 @@ class ActionTest < MiniTest::Test
       "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/#{job_id}",
       api_requests[1].path
     )
+    assert_includes error_output, "Something went wrong, please try again."
   end
 
-  def test_polling_failure_on_404
+  def test_polling_failure_on_API_error
     job_id = "my-job-123"
     create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
     error_message = "Not Found"
@@ -264,7 +265,7 @@ class ActionTest < MiniTest::Test
   def test_polling_success
     job_id = "my-job-123"
     create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
-    job_status, api_requests = run_action(
+    job_status, api_requests, _, success_output = run_action(
       env: {
         "GITHUB_REF" => "main",
         "GITHUB_REPOSITORY" => "monalisa/smile",
@@ -301,6 +302,11 @@ class ActionTest < MiniTest::Test
     assert_predicate api_requests[1], :get?
     assert_predicate api_requests[2], :get?
     assert_predicate api_requests[3], :get?
+
+    assert_includes success_output, "Requesting new codespace to be created..."
+    assert_includes success_output, "codespace caching in progress, this may take a while..."
+    assert_includes success_output, "still in progress..."
+    assert_includes success_output, "A precached codespace has been created successfully!"
   end
 
   def test_optional_inputs
@@ -435,6 +441,7 @@ class ActionTest < MiniTest::Test
   def run_action(env:, create_prebuild_template_responses:, status_responses:)
     status = nil
     error_output = nil
+    output = nil
     api_requests = with_fake_api_server_running(create_prebuild_template_responses, status_responses) do |fake_api_url|
       full_env = env.merge(
         "GITHUB_API_URL" => fake_api_url,
@@ -449,7 +456,7 @@ class ActionTest < MiniTest::Test
         puts "Error output:\n#{error_output}\n"
       end
     end
-    [status, api_requests, error_output]
+    [status, api_requests, error_output, output]
   end
 
   def with_fake_api_server_running(create_prebuild_template_responses, status_responses)

@@ -32,9 +32,9 @@ display_template_failure() {
 poll_status () {
   local job_id="$1"
   local attempt="${2:-1}"
-  
-  if [[ $attempt > 10 ]]; then 
-    echo "creation in progress, this may take a while..."
+
+  if [[ $attempt == 1 ]]; then 
+    echo "codespace caching in progress, this may take a while..."
   else
     echo "still in progress..."
   fi
@@ -44,6 +44,7 @@ poll_status () {
   state=$(echo $status_data | jq -r '.state')
 
   if [[ "$state" == "succeeded" ]]; then
+    echo "A precached codespace has been created successfully!"
     return 0
   elif [[ "$state" == "failed" ]]; then
     display_template_failure "$status_data"
@@ -84,6 +85,8 @@ for region in $INPUT_REGIONS; do
     }
 JSON
 )
+
+echo "Requesting new codespace to be created..."
   response=$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
     -H "Content-Type: application/json; charset=utf-8" \
     -H "Authorization: token $GITHUB_TOKEN" \
