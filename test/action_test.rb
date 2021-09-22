@@ -144,6 +144,7 @@ class ActionTest < MiniTest::Test
     job_id = "my-job-123"
     create_prebuild_template_response = CreatePrebuildTemplateResponse.new job_status_id: job_id
     error_message = "Not Found"
+    documentation_url = "http://api.fake.com"
     job_status, api_requests, error_output = run_action(
       env: {
         "GITHUB_REF" => "main",
@@ -155,7 +156,7 @@ class ActionTest < MiniTest::Test
       },
       create_prebuild_template_responses: [create_prebuild_template_response],
       status_responses: {
-        job_id => [ErrorResponse.new(status: 404, message: error_message)]
+        job_id => [ErrorResponse.new(status: 404, message: error_message, documentation_url: documentation_url)]
       },
     )
 
@@ -180,6 +181,7 @@ class ActionTest < MiniTest::Test
       api_requests[1].path
     )
     assert_includes error_output, error_message
+    assert_includes error_output, documentation_url
   end
 
   def test_display_error_message_on_polling_failure

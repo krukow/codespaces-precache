@@ -23,9 +23,9 @@ display_template_failure() {
       -s )
     handle_error_message "$build_logs"
   elif [ "$message" != "null" ]; then
-    handle_error_message "$message"
+    handle_error_message "$status_data"
   else
-    handle_error_message "Something went wrong, please try again."
+    handle_error_message "Something went wrong, please try again. Error Response: ${status_data}"
   fi
 }
 
