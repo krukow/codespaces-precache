@@ -2,10 +2,11 @@
 
 get_status () {
   local job_id="$1"
-  status_data=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild_templates/provisioning_statuses/${job_id}" \
+  local result=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild_templates/provisioning_statuses/${job_id}" \
     -H "Content-Type: application/json; charset=utf-8" \
     -H "Authorization: token $GITHUB_TOKEN" \
     -s)
+  echo $result
 }
 
 display_template_failure() {
@@ -31,14 +32,14 @@ display_template_failure() {
 poll_status () {
   local job_id="$1"
   local attempt="${2:-1}"
-
+  
   if [[ $attempt > 10 ]]; then 
-    echo "polling creation in progress, this may take a while..."
+    echo "creation in progress, this may take a while..."
   else
     echo "still in progress..."
   fi
 
-  get_status "$job_id"
+  local status_data=$(get_status "$job_id")
 
   state=$(echo $status_data | jq -r '.state')
 
@@ -47,9 +48,12 @@ poll_status () {
   elif [[ "$state" == "failed" ]]; then
     display_template_failure "$status_data"
     return 1
-  else
+  elif [[ "$state" == "processing" ]]; then 
     sleep ${POLLING_DELAY:-60}
     poll_status "$job_id" $(($attempt+1))
+  else
+    display_template_failure "$status_data"
+    return 1
   fi
 }
 
