@@ -40,6 +40,7 @@ poll_status () {
   fi
 
   local status_data=$(get_status "$job_id")
+  echo $status_data
 
   state=$(echo $status_data | jq -r '.state')
 
