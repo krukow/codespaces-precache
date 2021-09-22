@@ -96,7 +96,7 @@ echo "Requesting new codespace to be created & cached..."
   http_code=${response: -3}
   response_body=$(echo ${response} | head -c-4)
   if [ "$http_code" != "200" ]; then
-    handle_error_message "$($response_body)"
+    handle_error_message "$(echo $response_body | jq -r '.message')"
     exit 1
   else
     job_id=$(echo $response_body | jq -r '.job_status_id')
