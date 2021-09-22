@@ -303,7 +303,7 @@ class ActionTest < MiniTest::Test
     assert_predicate api_requests[2], :get?
     assert_predicate api_requests[3], :get?
 
-    assert_includes success_output, "Requesting new codespace to be created..."
+    assert_includes success_output, "Requesting new codespace to be created & cached..."
     assert_includes success_output, "codespace caching in progress, this may take a while..."
     assert_includes success_output, "still in progress..."
     assert_includes success_output, "A precached codespace has been created successfully!"
