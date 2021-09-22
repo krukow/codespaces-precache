@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: github/codespaces-precache@v1.0.1
+      - uses: github/codespaces-precache@cache-in-cache
         with:
           target: ppe
           regions: WestUs2
