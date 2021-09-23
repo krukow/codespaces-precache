@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 get_status () {
   local job_id="$1"
   local result=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild_templates/provisioning_statuses/${job_id}" \
