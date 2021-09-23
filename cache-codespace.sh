@@ -23,7 +23,7 @@ display_template_failure() {
       -s )
     handle_error_message "$build_logs"
   else
-    handle_error_message "Something went wrong, please try again. Error Response: ${status_data}"
+    handle_error_message "Something went wrong, please try again.\n${status_data}"
   fi
 }
 
