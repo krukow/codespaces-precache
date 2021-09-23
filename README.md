@@ -103,3 +103,8 @@ $ cat /workspaces/.codespaces/shared/environment-variables.json | jq '.ACTION_NA
 "createFromPrebuild"
 ```
 If the output is `"createFromPrebuild"` it was newly created from a prebuild.
+
+
+### Can my `postCreateCommand` be run as part of the prebuild process?
+
+We recommend updating your [devcontainer.json](https://code.visualstudio.com/docs/remote/devcontainerjson-reference) to use `onCreateCommand` instead which will run when we create a prebuild.
