@@ -22,7 +22,7 @@ display_template_failure() {
       -H "Authorization: token $GITHUB_TOKEN" \
       -s )
     handle_error_message "$build_logs"
-  elif [ "$message" != "null" && "$guid" != "null" ]; then
+  elif [[ "$message" != "null" && "$guid" != "null" ]]; then
     handle_error_message "$status_data"
   else
     handle_error_message "Something went wrong, please try again. Error Response: ${status_data}"
