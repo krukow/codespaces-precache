@@ -107,4 +107,4 @@ If the output is `"createFromPrebuild"` it was newly created from a prebuild.
 
 ### Can my `postCreateCommand` be run as part of the prebuild process?
 
-We recommend updating your [devcontainer.json](https://code.visualstudio.com/docs/remote/devcontainerjson-reference) to use `onCreateCommand` instead which will run when we create a prebuild.
+We recommend updating your [devcontainer.json](https://code.visualstudio.com/docs/remote/devcontainerjson-reference) to use `onCreateCommand` for any commands you want to run as part of the prebuild process, which will happen before the codespace gets assigned to a user. `postCreateCommand` will still run after a codespace is created and is therefore a good place to do any initialization that's specific to the user to whom the codespace is assigned.
