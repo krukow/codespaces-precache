@@ -15,8 +15,8 @@ display_template_failure() {
   error_logs_available="$(echo $status_data | jq -r '.error_logs_available')"
   message="$(echo $status_data | jq -r '.message')"
 
-  if [[ "$error_logs_available" == "true" ]]; then
-    guid="$(echo $status_data | jq -r '.guid')"
+  guid="$(echo $status_data | jq -r '.guid')"
+  if [[ "$error_logs_available" == "true" && "$guid" != "null" ]]; then
     build_logs=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuilds/environments/$guid/logs" \
       -H "Content-Type: application/json; charset=utf-8" \
       -H "Authorization: token $GITHUB_TOKEN" \
