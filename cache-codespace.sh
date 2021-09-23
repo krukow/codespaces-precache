@@ -12,17 +12,17 @@ get_status () {
 display_template_failure() {
   local status_data="$1"
 
-  error_logs_available="$(echo $status_data | jq -r '.error_logs_available')"
-  message="$(echo $status_data | jq -r '.message')"
+  local error_logs_available="$(echo $status_data | jq -r '.error_logs_available')"
+  local message="$(echo $status_data | jq -r '.message')"
 
-  guid="$(echo $status_data | jq -r '.guid')"
-  if [[ "$error_logs_available" == "true" && "$guid" != "null" ]]; then
+  local guid="$(echo $status_data | jq -r '.guid')"
+  if [[ "$error_logs_available" == "true" ]]; then
     build_logs=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuilds/environments/$guid/logs" \
       -H "Content-Type: application/json; charset=utf-8" \
       -H "Authorization: token $GITHUB_TOKEN" \
       -s )
     handle_error_message "$build_logs"
-  elif [ "$message" != "null" ]; then
+  elif [ "$message" != "null" && "$guid" != "null" ]; then
     handle_error_message "$status_data"
   else
     handle_error_message "Something went wrong, please try again. Error Response: ${status_data}"
