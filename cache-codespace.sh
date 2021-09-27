@@ -71,6 +71,9 @@ if [[ -n "$INPUT_TARGET_URL" ]]; then
   target_url="\"vscs_target_url\":\"$INPUT_TARGET_URL\","
 fi
 
+declare -a RESPONSES=()
+declare -a JOB_IDS=()
+
 for region in $INPUT_REGIONS; do
   body=$(cat <<-JSON
     {
@@ -85,19 +88,23 @@ JSON
 )
 
 echo "Requesting new codespace to be created & cached..."
-  response=$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
+  RESPONSES+=$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
     -H "Content-Type: application/json; charset=utf-8" \
     -H "Authorization: token $GITHUB_TOKEN" \
     -d "$body" \
     -s \
     -w "%{http_code}" )
+done
+
+for response in "${RESPONSES[@]}"; do
   http_code=${response: -3}
   response_body=$(echo ${response} | head -c-4)
   if [ "$http_code" != "200" ]; then
     handle_error_message "$response_body"
     exit 1
   else
-    job_id=$(echo $response_body | jq -r '.job_status_id')
-    poll_status $job_id
+    JOB_IDS+=$(echo $response_body | jq -r '.job_status_id')
   fi
 done
+
+poll_status ${JOB_IDS[0]}
