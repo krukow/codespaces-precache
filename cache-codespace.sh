@@ -11,6 +11,7 @@ get_status () {
 
 display_template_failure() {
   local status_data="$1"
+  local job_id="$2"
 
   local error_logs_available="$(echo $status_data | jq -r '.error_logs_available')"
   local message="$(echo $status_data | jq -r '.message')"
@@ -21,15 +22,43 @@ display_template_failure() {
       -H "Content-Type: application/json; charset=utf-8" \
       -H "Authorization: token $GITHUB_TOKEN" \
       -s )
-    handle_error_message "$build_logs"
+    handle_job_error "$build_logs" "${job_id}"
   else
-    handle_error_message "Something went wrong, please try again.\n${status_data}"
+    handle_job_error "Something went wrong, please try again.\n${status_data}" "${job_id}"
   fi
 }
 
 poll_status () {
-  local job_id="$1"
+  local job_ids="$1"
+  local -A job_final_states
+  local -A failure_messages
+
+  poll_all_statuses "${job_ids[@]}"
+
+  # Print error messages for all failed jobs
+  if [ "${#failure_messages[@]}" -ne 0 ]; then
+    for job in "${!failure_messages[@]}"; do
+      display_template_failure "${failure_messages[$job]}" "${job}"
+    done
+  fi
+
+  local code=0
+  echo "====== ACTION STATUS SUMMARY ======="
+  for job in "${!job_final_states[@]}"; do
+    if [[ "${job_final_states[$job]}" != "succeeded" ]]; then
+      code=1
+    fi
+    # Print state for each job
+    echo "job_id: $job; status: ${job_final_states[$job]}"
+  done
+  return $code
+}
+
+poll_all_statuses () {
+  local job_ids="$1"
   local attempt="${2:-1}"
+  
+  local -a jobs_processing=()
 
   if [[ $attempt == 1 ]]; then 
     echo "codespace caching in progress, this may take a while..."
@@ -37,23 +66,40 @@ poll_status () {
     echo "still in progress..."
   fi
 
-  local status_data=$(get_status "$job_id")
+  for job_id in "${job_ids[@]}"; do
 
-  state=$(echo $status_data | jq -r '.state')
+    local status_data=$(get_status "$job_id")
 
-  if [[ "$state" == "succeeded" ]]; then
-    echo "A precached codespace has been created successfully!"
-    return 0
-  elif [[ "$state" == "failed" ]]; then
-    display_template_failure "$status_data"
-    return 1
-  elif [[ "$state" == "processing" ]]; then 
+    state=$(echo $status_data | jq -r '.state')
+
+    if [[ "$state" == "succeeded" ]]; then
+      job_final_states["$job_id"]+="succeeded"
+    elif [[ "$state" == "failed" ]]; then
+      failure_messages["$job_id"]+="$status_data"
+      job_final_states["$job_id"]+="failed"
+    elif [[ "$state" == "processing" ]]; then 
+      jobs_processing+=("$job_id")
+    else
+      failure_messages["$job_id"]+="$status_data"
+      job_final_states["$job_id"]+="$state"
+    fi
+  done
+
+  # Continue to poll only for jobs that are still processing
+  if [ ${#jobs_processing[@]} -ne 0 ]; then
     sleep ${POLLING_DELAY:-60}
-    poll_status "$job_id" $(($attempt+1))
-  else
-    display_template_failure "$status_data"
-    return 1
+
+    poll_all_statuses "${jobs_processing[@]}" $(($attempt+1))
   fi
+}
+
+handle_job_error() {
+  local error_message="$1"
+  local job_id="$2"
+  >&2 echo "*************************Error*************************"
+  >&2 echo "$error_message"
+  >&2 echo "Job ID: ${job_id}"
+  >&2 echo "*************************Error*************************"
 }
 
 handle_error_message() {
@@ -101,10 +147,10 @@ for response in "${RESPONSES[@]}"; do
   response_body=$(echo ${response} | head -c-4)
   if [ "$http_code" != "200" ]; then
     handle_error_message "$response_body"
-    exit 1
+    # exit 1
   else
     JOB_IDS+=$(echo $response_body | jq -r '.job_status_id')
   fi
 done
 
-poll_status ${JOB_IDS[0]}
+poll_status "${JOB_IDS[@]}"
