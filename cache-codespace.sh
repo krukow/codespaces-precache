@@ -54,7 +54,7 @@ poll_status () {
       code=1
     fi
     # Print state for each job
-    echo "job_id: $job_id | status: ${job_final_states[$job_id]} | job: ${job_data[$job_id]}"
+    echo -e "job_id: $job_id | status: ${job_final_states[$job_id]} | job: ${job_data[$job_id]}"
   done
   return $code
 }
@@ -103,7 +103,7 @@ handle_job_error() {
   local error_message="$1"
   local job_id="$2"
   >&2 echo "*************************Error*************************"
-  >&2 echo "$error_message"
+  >&2 echo -e "$error_message"
   >&2 echo "Job ID: ${job_id}"
   >&2 echo "*************************Error*************************"
 }
@@ -111,7 +111,7 @@ handle_job_error() {
 handle_error_message() {
   local error_message="$1"
   >&2 echo "*************************Error*************************"
-  >&2 echo "$error_message"
+  >&2 echo -e "$error_message"
   >&2 echo "*************************Error*************************"
 }
 

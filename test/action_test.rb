@@ -138,6 +138,7 @@ class ActionTest < MiniTest::Test
       api_requests[1].path
     )
     assert_includes error_output, "Something went wrong, please try again."
+    refute_includes error_output, '\n'
   end
 
   def test_polling_failure_on_API_error
