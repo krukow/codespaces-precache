@@ -275,7 +275,7 @@ class ActionTest < MiniTest::Test
         "GITHUB_REPOSITORY" => "monalisa/smile",
         "GITHUB_SHA" => "abcdef1234567890",
         "GITHUB_TOKEN" => "my-very-secret-token",
-        "INPUT_REGIONS" => "WestUs2",
+        "INPUT_REGIONS" => region,
         "INPUT_SKU_NAME" => sku_name,
       },
       create_prebuild_template_responses: [create_prebuild_template_response],
@@ -358,12 +358,12 @@ class ActionTest < MiniTest::Test
     )
   end
 
-  def test_multiple_locations
+  def test_multiple_locations_all_succeed
     create_prebuild_template_responses = [
       CreatePrebuildTemplateResponse.new(job_status_id: "west-job-id", sku_name: "futuristicQuantumComputer", location: "WestUs2"),
       CreatePrebuildTemplateResponse.new(job_status_id: "east-job-id",sku_name: "futuristicQuantumComputer", location: "EastUs1"),
     ]
-    job_status, api_requests = run_action(
+    job_status, api_requests, _, success_output = run_action(
       env: {
         "GITHUB_REF" => "main",
         "GITHUB_REPOSITORY" => "monalisa/smile",
@@ -416,6 +416,238 @@ class ActionTest < MiniTest::Test
       "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/east-job-id",
       api_requests[3].path
     )
+
+    assert_includes success_output, 'job_id: east-job-id | status: succeeded | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, 'job_id: west-job-id | status: succeeded | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+  end
+
+  def test_multiple_locations_all_fail
+    create_prebuild_template_responses = [
+      CreatePrebuildTemplateResponse.new(job_status_id: "west-job-id", sku_name: "futuristicQuantumComputer", location: "WestUs2"),
+      CreatePrebuildTemplateResponse.new(job_status_id: "east-job-id",sku_name: "futuristicQuantumComputer", location: "EastUs1"),
+    ]
+    job_status, api_requests, _, success_output = run_action(
+      env: {
+        "GITHUB_REF" => "main",
+        "GITHUB_REPOSITORY" => "monalisa/smile",
+        "GITHUB_SHA" => "abcdef1234567890",
+        "GITHUB_TOKEN" => "my-very-secret-token",
+        "INPUT_REGIONS" => "WestUs2 EastUs1",
+        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
+      },
+      create_prebuild_template_responses: create_prebuild_template_responses,
+      status_responses: {
+        "west-job-id" => [StatusResponse.new(state: "failed")],
+        "east-job-id" => [StatusResponse.new(state: "failed")]
+      },
+    )
+
+    refute_predicate job_status, :success?
+
+    assert_equal 4, api_requests.length
+
+    assert_predicate api_requests[0], :post?
+    assert_equal(
+      {
+        "ref" => "main",
+        "location" => "WestUs2",
+        "sku_name" => "futuristicQuantumComputer",
+        "sha" => "abcdef1234567890",
+      },
+      JSON.load(api_requests[0].body)
+    )
+
+    assert_predicate api_requests[1], :post?
+    assert_equal(
+      {
+        "ref" => "main",
+        "location" => "EastUs1",
+        "sku_name" => "futuristicQuantumComputer",
+        "sha" => "abcdef1234567890",
+      },
+      JSON.load(api_requests[1].body)
+    )
+
+    assert_predicate api_requests[2], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/west-job-id",
+      api_requests[2].path
+    )
+
+    assert_predicate api_requests[3], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/east-job-id",
+      api_requests[3].path
+    )
+
+    assert_includes success_output, 'job_id: east-job-id | status: failed | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, 'job_id: west-job-id | status: failed | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+  end
+
+  def test_multiple_locations_one_fails
+    create_prebuild_template_responses = [
+      CreatePrebuildTemplateResponse.new(job_status_id: "west-job-id", sku_name: "futuristicQuantumComputer", location: "WestUs2"),
+      CreatePrebuildTemplateResponse.new(job_status_id: "east-job-id",sku_name: "futuristicQuantumComputer", location: "EastUs1"),
+    ]
+    job_status, api_requests, _, success_output = run_action(
+      env: {
+        "GITHUB_REF" => "main",
+        "GITHUB_REPOSITORY" => "monalisa/smile",
+        "GITHUB_SHA" => "abcdef1234567890",
+        "GITHUB_TOKEN" => "my-very-secret-token",
+        "INPUT_REGIONS" => "WestUs2 EastUs1",
+        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
+      },
+      create_prebuild_template_responses: create_prebuild_template_responses,
+      status_responses: {
+        "west-job-id" => [StatusResponse.new(state: "succeeded")],
+        "east-job-id" => [StatusResponse.new(state: "failed")]
+      },
+    )
+
+    refute_predicate job_status, :success?
+
+    assert_equal 4, api_requests.length
+
+    assert_predicate api_requests[0], :post?
+    assert_equal(
+      {
+        "ref" => "main",
+        "location" => "WestUs2",
+        "sku_name" => "futuristicQuantumComputer",
+        "sha" => "abcdef1234567890",
+      },
+      JSON.load(api_requests[0].body)
+    )
+
+    assert_predicate api_requests[1], :post?
+    assert_equal(
+      {
+        "ref" => "main",
+        "location" => "EastUs1",
+        "sku_name" => "futuristicQuantumComputer",
+        "sha" => "abcdef1234567890",
+      },
+      JSON.load(api_requests[1].body)
+    )
+
+    assert_predicate api_requests[2], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/west-job-id",
+      api_requests[2].path
+    )
+
+    assert_predicate api_requests[3], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/east-job-id",
+      api_requests[3].path
+    )
+
+    assert_includes success_output, 'job_id: east-job-id | status: failed | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, 'job_id: west-job-id | status: succeeded | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+  end
+
+  def test_multiple_locations_keeps_polling_until_all_are_done
+    create_prebuild_template_responses = [
+      CreatePrebuildTemplateResponse.new(job_status_id: "west-job-id", sku_name: "futuristicQuantumComputer", location: "WestUs2"),
+      CreatePrebuildTemplateResponse.new(job_status_id: "east-job-id",sku_name: "futuristicQuantumComputer", location: "EastUs1"),
+    ]
+    job_status, api_requests, _, success_output = run_action(
+      env: {
+        "GITHUB_REF" => "main",
+        "GITHUB_REPOSITORY" => "monalisa/smile",
+        "GITHUB_SHA" => "abcdef1234567890",
+        "GITHUB_TOKEN" => "my-very-secret-token",
+        "INPUT_REGIONS" => "WestUs2 EastUs1",
+        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
+      },
+      create_prebuild_template_responses: create_prebuild_template_responses,
+      status_responses: {
+        "west-job-id" => [
+          StatusResponse.new(state: "processing"),
+          StatusResponse.new(state: "succeeded")
+        ],
+        "east-job-id" => [
+          StatusResponse.new(state: "processing"),
+          StatusResponse.new(state: "processing"),
+          StatusResponse.new(state: "processing"),
+          StatusResponse.new(state: "processing"),
+          StatusResponse.new(state: "succeeded")]
+      },
+    )
+
+    assert_predicate job_status, :success?
+
+    assert_equal 9, api_requests.length
+
+    assert_predicate api_requests[0], :post?
+    assert_equal(
+      {
+        "ref" => "main",
+        "location" => "WestUs2",
+        "sku_name" => "futuristicQuantumComputer",
+        "sha" => "abcdef1234567890",
+      },
+      JSON.load(api_requests[0].body)
+    )
+
+    assert_predicate api_requests[1], :post?
+    assert_equal(
+      {
+        "ref" => "main",
+        "location" => "EastUs1",
+        "sku_name" => "futuristicQuantumComputer",
+        "sha" => "abcdef1234567890",
+      },
+      JSON.load(api_requests[1].body)
+    )
+
+    assert_predicate api_requests[2], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/west-job-id",
+      api_requests[2].path
+    )
+
+    assert_predicate api_requests[3], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/east-job-id",
+      api_requests[3].path
+    )
+
+    assert_predicate api_requests[4], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/west-job-id",
+      api_requests[4].path
+    )
+
+    assert_predicate api_requests[5], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/east-job-id",
+      api_requests[5].path
+    )
+
+    assert_predicate api_requests[6], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/east-job-id",
+      api_requests[6].path
+    )
+
+    assert_predicate api_requests[7], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/east-job-id",
+      api_requests[7].path
+    )
+
+    assert_predicate api_requests[8], :get?
+    assert_equal(
+      "/vscs_internal/codespaces/repository/monalisa/smile/prebuild_templates/provisioning_statuses/east-job-id",
+      api_requests[8].path
+    )
+
+    assert_predicate api_requests[9], :nil?
+
+    assert_includes success_output, 'job_id: east-job-id | status: succeeded | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, 'job_id: west-job-id | status: succeeded | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
   end
 
   def test_immediate_creation_failure
