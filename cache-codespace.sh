@@ -1,5 +1,9 @@
 #!/bin/bash
 
+declare -a RESPONSES=()
+declare -a JOB_IDS=()
+declare -A JOB_DATA
+
 get_status () {
   local job_id="$1"
   local result=$(curl "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild_templates/provisioning_statuses/${job_id}" \
@@ -29,11 +33,12 @@ display_template_failure() {
 }
 
 poll_status () {
-  local job_ids="$1"
+  local -n job_ids="$1"
+  local -n job_data="$2"
   local -A job_final_states
   local -A failure_messages
 
-  poll_all_statuses "${job_ids[@]}"
+  poll_all_statuses "1" "${job_ids[@]}"
 
   # Print error messages for all failed jobs
   if [ "${#failure_messages[@]}" -ne 0 ]; then
@@ -44,19 +49,20 @@ poll_status () {
 
   local code=0
   echo "====== ACTION STATUS SUMMARY ======="
-  for job in "${!job_final_states[@]}"; do
-    if [[ "${job_final_states[$job]}" != "succeeded" ]]; then
+  for job_id in "${!job_data[@]}"; do
+    if [[ "${job_final_states[$job_id]}" != "succeeded" ]]; then
       code=1
     fi
     # Print state for each job
-    echo "job_id: $job; status: ${job_final_states[$job]}"
+    echo "job_id: $job_id | status: ${job_final_states[$job_id]} | job: ${job_data[$job_id]}"
   done
   return $code
 }
 
 poll_all_statuses () {
-  local job_ids="$1"
-  local attempt="${2:-1}"
+  local attempt="$1"
+  shift
+  local -a job_ids=($@)
   
   local -a jobs_processing=()
 
@@ -89,7 +95,7 @@ poll_all_statuses () {
   if [ ${#jobs_processing[@]} -ne 0 ]; then
     sleep ${POLLING_DELAY:-60}
 
-    poll_all_statuses "${jobs_processing[@]}" $(($attempt+1))
+    poll_all_statuses $(($attempt+1)) "${jobs_processing[@]}"
   fi
 }
 
@@ -117,8 +123,7 @@ if [[ -n "$INPUT_TARGET_URL" ]]; then
   target_url="\"vscs_target_url\":\"$INPUT_TARGET_URL\","
 fi
 
-declare -a RESPONSES=()
-declare -a JOB_IDS=()
+echo "Requesting new codespace(s) to be created & cached..."
 
 for region in $INPUT_REGIONS; do
   body=$(cat <<-JSON
@@ -133,13 +138,12 @@ for region in $INPUT_REGIONS; do
 JSON
 )
 
-echo "Requesting new codespace to be created & cached..."
-  RESPONSES+=$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
+  RESPONSES+=("$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
     -H "Content-Type: application/json; charset=utf-8" \
     -H "Authorization: token $GITHUB_TOKEN" \
     -d "$body" \
     -s \
-    -w "%{http_code}" )
+    -w "%{http_code}" )")
 done
 
 for response in "${RESPONSES[@]}"; do
@@ -147,10 +151,12 @@ for response in "${RESPONSES[@]}"; do
   response_body=$(echo ${response} | head -c-4)
   if [ "$http_code" != "200" ]; then
     handle_error_message "$response_body"
-    # exit 1
+    exit 1 # TODO fix
   else
-    JOB_IDS+=$(echo $response_body | jq -r '.job_status_id')
+    job_id=$(echo $response_body | jq -r '.job_status_id')
+    JOB_IDS+=($job_id)
+    JOB_DATA["$job_id"]+="${response_body}"
   fi
 done
 
-poll_status "${JOB_IDS[@]}"
+poll_status JOB_IDS JOB_DATA 
