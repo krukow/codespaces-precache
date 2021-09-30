@@ -314,6 +314,7 @@ class ActionTest < MiniTest::Test
     assert_includes success_output, "====== ACTION STATUS SUMMARY ======="
     assert_includes success_output, "job_id: my-job-123 | status: succeeded"
     assert_includes success_output, '{"job_status_id":"my-job-123","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, "Error Count: 0"
   end
 
   def test_optional_inputs
@@ -420,6 +421,7 @@ class ActionTest < MiniTest::Test
 
     assert_includes success_output, 'job_id: east-job-id | status: succeeded | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
     assert_includes success_output, 'job_id: west-job-id | status: succeeded | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, "Error Count: 0"
   end
 
   def test_multiple_locations_all_fail
@@ -483,6 +485,7 @@ class ActionTest < MiniTest::Test
 
     assert_includes success_output, 'job_id: east-job-id | status: failed | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
     assert_includes success_output, 'job_id: west-job-id | status: failed | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, "Error Count: 2"
   end
 
   def test_multiple_locations_one_fails
@@ -546,6 +549,7 @@ class ActionTest < MiniTest::Test
 
     assert_includes success_output, 'job_id: east-job-id | status: failed | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
     assert_includes success_output, 'job_id: west-job-id | status: succeeded | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, "Error Count: 1"
   end
 
   def test_multiple_locations_keeps_polling_until_all_are_done
@@ -649,6 +653,7 @@ class ActionTest < MiniTest::Test
 
     assert_includes success_output, 'job_id: east-job-id | status: succeeded | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
     assert_includes success_output, 'job_id: west-job-id | status: succeeded | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, "Error Count: 0"
   end
 
   def test_immediate_creation_failure
@@ -678,6 +683,80 @@ class ActionTest < MiniTest::Test
 
     assert_includes error_output, error_message
     assert_includes error_output, documentation_url
+    assert_includes success_output, "Error Count: 1"
+  end
+
+  def test_immediate_creation_failure_for_all_regions
+    job_id = "my-job-123"
+    error_message = 'The codespaces secret must be set.'
+    documentation_url = "http://fake.api.com"
+    create_prebuild_template_response = ErrorResponse.new(
+      status: 404,
+      message: error_message,
+      documentation_url: documentation_url
+    )
+
+    job_status, api_requests, error_output, success_output = run_action(
+      env: {
+        "GITHUB_REF" => "main",
+        "GITHUB_REPOSITORY" => "monalisa/smile",
+        "GITHUB_SHA" => "abcdef1234567890",
+        "GITHUB_TOKEN" => "my-very-secret-token",
+        "INPUT_REGIONS" => "WestUs2 EastUs WestEurope",
+        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
+      },
+      status_responses: {},
+      create_prebuild_template_responses: [create_prebuild_template_response, create_prebuild_template_response, create_prebuild_template_response],
+    )
+
+    refute_predicate job_status, :success?
+
+    assert_includes error_output, error_message
+    assert_includes error_output, documentation_url
+    assert_includes success_output, "Error Count: 3"
+  end
+
+  def test_immediate_creation_failure_for_one_region
+
+    error_message = 'The region is invalid.'
+    documentation_url = "http://fake.api.com"
+
+    job_1 = "my-job-1"
+    job_2 = "my-job-2"
+
+    job_status, api_requests, error_output, success_output = run_action(
+      env: {
+        "GITHUB_REF" => "main",
+        "GITHUB_REPOSITORY" => "monalisa/smile",
+        "GITHUB_SHA" => "abcdef1234567890",
+        "GITHUB_TOKEN" => "my-very-secret-token",
+        "INPUT_REGIONS" => "WestUs2 theMoon WestEurope",
+        "INPUT_SKU_NAME" => "futuristicQuantumComputer",
+      },
+      status_responses: {
+        job_1 => [StatusResponse.new(state: "processing"), StatusResponse.new(state: "succeeded")],
+        job_2 => [StatusResponse.new(state: "processing"), StatusResponse.new(state: "succeeded")]
+      },
+      create_prebuild_template_responses: [
+        CreatePrebuildTemplateResponse.new(
+          job_status_id: job_1, location: "EastUs", sku_name: "futuristicQuantumComputer"
+        ),
+        ErrorResponse.new(
+          status: 400,
+          message: error_message,
+          documentation_url: documentation_url
+        ),
+        CreatePrebuildTemplateResponse.new(
+          job_status_id: job_2, location: "WestEurope", sku_name: "futuristicQuantumComputer"
+        )],
+    )
+
+    refute_predicate job_status, :success?
+
+    assert_includes error_output, error_message
+    assert_includes error_output, documentation_url
+    assert_includes success_output, "====== ACTION STATUS SUMMARY ======="
+    assert_includes success_output, "Error Count: 1"
   end
 
   def run_action(env:, create_prebuild_template_responses:, status_responses:)

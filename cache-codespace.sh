@@ -3,6 +3,7 @@
 declare -a RESPONSES=()
 declare -a JOB_IDS=()
 declare -A JOB_DATA
+declare -a IMMEDIATE_FAILURES=()
 
 get_status () {
   local job_id="$1"
@@ -35,9 +36,10 @@ display_template_failure() {
 poll_status () {
   local -n job_ids="$1"
   local -n job_data="$2"
+  local -n immediate_failures="$3"
   local -A job_final_states
   local -A failure_messages
-
+  
   poll_all_statuses "1" "${job_ids[@]}"
 
   # Print error messages for all failed jobs
@@ -48,14 +50,24 @@ poll_status () {
   fi
 
   local code=0
+  error_count=${#immediate_failures[@]}
   echo "====== ACTION STATUS SUMMARY ======="
   for job_id in "${!job_data[@]}"; do
     if [[ "${job_final_states[$job_id]}" != "succeeded" ]]; then
+      error_count=$(($error_count + 1))
       code=1
     fi
     # Print state for each job
     echo -e "job_id: $job_id | status: ${job_final_states[$job_id]} | job: ${job_data[$job_id]}"
   done
+  echo "Error Count: $error_count"
+
+  # Print immediate failures
+  if [ "${#immediate_failures[@]}" -ne 0 ]; then
+    handle_error_messages "${immediate_failures[@]}"
+    code=1
+  fi
+
   return $code
 }
 
@@ -102,17 +114,19 @@ poll_all_statuses () {
 handle_job_error() {
   local error_message="$1"
   local job_id="$2"
-  >&2 echo "*************************Error*************************"
+  >&2 echo "*************************Error***********************"
   >&2 echo -e "$error_message"
   >&2 echo "Job ID: ${job_id}"
-  >&2 echo "*************************Error*************************"
+  >&2 echo "*****************************************************"
 }
 
-handle_error_message() {
-  local error_message="$1"
-  >&2 echo "*************************Error*************************"
-  >&2 echo -e "$error_message"
-  >&2 echo "*************************Error*************************"
+handle_error_messages() {
+  local error_messages=("$@")
+  >&2 echo "***********************Errors*************************"
+  for error in "${error_messages[@]}"; do
+    >&2 echo -e "$error"
+    >&2 echo "******************************************************"
+  done
 }
 
 if [[ -n "$INPUT_TARGET" ]]; then
@@ -137,26 +151,35 @@ for region in $INPUT_REGIONS; do
     }
 JSON
 )
-
-  RESPONSES+=("$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
+  response="$(curl -X POST "${GITHUB_API_URL}/vscs_internal/codespaces/repository/${GITHUB_REPOSITORY}/prebuild/templates" \
     -H "Content-Type: application/json; charset=utf-8" \
     -H "Authorization: token $GITHUB_TOKEN" \
     -d "$body" \
     -s \
-    -w "%{http_code}" )")
-done
+    -w "%{http_code}" )"
 
-for response in "${RESPONSES[@]}"; do
   http_code=${response: -3}
   response_body=$(echo ${response} | head -c-4)
   if [ "$http_code" != "200" ]; then
-    handle_error_message "$response_body"
-    exit 1 # TODO fix
+    IMMEDIATE_FAILURES+=("$response_body")
   else
-    job_id=$(echo $response_body | jq -r '.job_status_id')
-    JOB_IDS+=($job_id)
-    JOB_DATA["$job_id"]+="${response_body}"
+    RESPONSES+=("$response")
   fi
 done
 
-poll_status JOB_IDS JOB_DATA 
+for response in "${RESPONSES[@]}"; do
+  response_body=$(echo ${response} | head -c-4)
+    job_id=$(echo $response_body | jq -r '.job_status_id')
+    JOB_IDS+=($job_id)
+    JOB_DATA["$job_id"]+="${response_body}"
+done
+
+if [ "${#JOB_IDS[@]}" -ne 0 ]; then
+  # only poll jobs if at least one job was queued
+  poll_status JOB_IDS JOB_DATA IMMEDIATE_FAILURES
+else
+  # Error immediately if all failed
+  echo "Error Count: ${#IMMEDIATE_FAILURES[@]}"
+  handle_error_messages "${IMMEDIATE_FAILURES[@]}"
+  exit 1
+fi
