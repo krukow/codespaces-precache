@@ -311,9 +311,8 @@ class ActionTest < MiniTest::Test
     assert_includes success_output, "Requesting new codespace(s) to be created & cached..."
     assert_includes success_output, "codespace caching in progress, this may take a while..."
     assert_includes success_output, "still in progress..."
-    assert_includes success_output, "====== ACTION STATUS SUMMARY ======="
-    assert_includes success_output, "job_id: my-job-123 | status: succeeded"
-    assert_includes success_output, '{"job_status_id":"my-job-123","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, "================ACTION STATUS SUMMARY================"
+    assert_includes success_output, "job_id: my-job-123 | status: succeeded | location: WestUs2"
     assert_includes success_output, "Error Count: 0"
   end
 
@@ -419,8 +418,8 @@ class ActionTest < MiniTest::Test
       api_requests[3].path
     )
 
-    assert_includes success_output, 'job_id: east-job-id | status: succeeded | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
-    assert_includes success_output, 'job_id: west-job-id | status: succeeded | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, 'job_id: east-job-id | status: succeeded | location: EastUs1'
+    assert_includes success_output, 'job_id: west-job-id | status: succeeded | location: WestUs2'
     assert_includes success_output, "Error Count: 0"
   end
 
@@ -483,8 +482,8 @@ class ActionTest < MiniTest::Test
       api_requests[3].path
     )
 
-    assert_includes success_output, 'job_id: east-job-id | status: failed | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
-    assert_includes success_output, 'job_id: west-job-id | status: failed | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, 'job_id: east-job-id | status: failed | location: EastUs1'
+    assert_includes success_output, 'job_id: west-job-id | status: failed | location: WestUs2'
     assert_includes success_output, "Error Count: 2"
   end
 
@@ -547,8 +546,8 @@ class ActionTest < MiniTest::Test
       api_requests[3].path
     )
 
-    assert_includes success_output, 'job_id: east-job-id | status: failed | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
-    assert_includes success_output, 'job_id: west-job-id | status: succeeded | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, 'job_id: east-job-id | status: failed | location: EastUs1'
+    assert_includes success_output, 'job_id: west-job-id | status: succeeded | location: WestUs2'
     assert_includes success_output, "Error Count: 1"
   end
 
@@ -651,8 +650,8 @@ class ActionTest < MiniTest::Test
 
     assert_predicate api_requests[9], :nil?
 
-    assert_includes success_output, 'job_id: east-job-id | status: succeeded | job: {"job_status_id":"east-job-id","location":"EastUs1","sku_name":"futuristicQuantumComputer"}'
-    assert_includes success_output, 'job_id: west-job-id | status: succeeded | job: {"job_status_id":"west-job-id","location":"WestUs2","sku_name":"futuristicQuantumComputer"}'
+    assert_includes success_output, 'job_id: east-job-id | status: succeeded | location: EastUs1'
+    assert_includes success_output, 'job_id: west-job-id | status: succeeded | location: WestUs2'
     assert_includes success_output, "Error Count: 0"
   end
 
@@ -666,7 +665,7 @@ class ActionTest < MiniTest::Test
       documentation_url: documentation_url
     )
 
-    job_status, api_requests, error_output = run_action(
+    job_status, api_requests, error_output, success_output = run_action(
       env: {
         "GITHUB_REF" => "main",
         "GITHUB_REPOSITORY" => "monalisa/smile",
@@ -755,7 +754,7 @@ class ActionTest < MiniTest::Test
 
     assert_includes error_output, error_message
     assert_includes error_output, documentation_url
-    assert_includes success_output, "====== ACTION STATUS SUMMARY ======="
+    assert_includes success_output, "================ACTION STATUS SUMMARY================"
     assert_includes success_output, "Error Count: 1"
   end
 

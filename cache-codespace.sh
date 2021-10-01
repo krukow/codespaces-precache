@@ -51,14 +51,16 @@ poll_status () {
 
   local code=0
   error_count=${#immediate_failures[@]}
-  echo "====== ACTION STATUS SUMMARY ======="
+        *************************
+  echo "================ACTION STATUS SUMMARY================"
   for job_id in "${!job_data[@]}"; do
     if [[ "${job_final_states[$job_id]}" != "succeeded" ]]; then
       error_count=$(($error_count + 1))
       code=1
     fi
     # Print state for each job
-    echo -e "job_id: $job_id | status: ${job_final_states[$job_id]} | job: ${job_data[$job_id]}"
+    location=$(echo ${job_data[$job_id]} | jq -r '.location')
+    echo -e "job_id: $job_id | status: ${job_final_states[$job_id]} | location: $location"
   done
   echo "Error Count: $error_count"
 
