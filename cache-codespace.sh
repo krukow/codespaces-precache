@@ -51,7 +51,6 @@ poll_status () {
 
   local code=0
   error_count=${#immediate_failures[@]}
-        *************************
   echo "================ACTION STATUS SUMMARY================"
   for job_id in "${!job_data[@]}"; do
     if [[ "${job_final_states[$job_id]}" != "succeeded" ]]; then
