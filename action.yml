@@ -16,7 +16,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - run: ${{ github.action_path }}/cache-codespace.sh
+    - run: ${{ github.action_path }}/cache-codespace.sh 2>&1
       shell: bash
       env:
         INPUT_REGIONS: ${{ inputs.regions }}
