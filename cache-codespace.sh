@@ -39,6 +39,7 @@ poll_status () {
   local -n immediate_failures="$3"
   local -A job_final_states
   local -A failure_messages
+  local code=0
   
   poll_all_statuses "1" "${job_ids[@]}"
 
@@ -55,7 +56,6 @@ poll_status () {
     code=1
   fi
 
-  local code=0
   error_count=${#immediate_failures[@]}
   echo "================ACTION STATUS SUMMARY================"
   for job_id in "${!job_data[@]}"; do
