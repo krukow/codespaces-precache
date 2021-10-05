@@ -49,6 +49,12 @@ poll_status () {
     done
   fi
 
+  # Print immediate failures
+  if [ "${#immediate_failures[@]}" -ne 0 ]; then
+    handle_error_messages "${immediate_failures[@]}"
+    code=1
+  fi
+
   local code=0
   error_count=${#immediate_failures[@]}
   echo "================ACTION STATUS SUMMARY================"
@@ -62,12 +68,6 @@ poll_status () {
     echo -e "job_id: $job_id | status: ${job_final_states[$job_id]} | location: $location"
   done
   echo "Error Count: $error_count"
-
-  # Print immediate failures
-  if [ "${#immediate_failures[@]}" -ne 0 ]; then
-    handle_error_messages "${immediate_failures[@]}"
-    code=1
-  fi
 
   return $code
 }
