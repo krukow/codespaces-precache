@@ -96,7 +96,8 @@ Check the action logs for an error message or a success response. It may take so
 
 #### Action success response looks like:
 
-![Screen Shot 2021-10-07 at 2 26 45 PM](https://user-images.githubusercontent.com/5428933/136442330-121e3555-0793-42f6-9717-eaa01ee4b214.png)
+![Screen Shot 2021-10-07 at 2 18 42 PM](https://user-images.githubusercontent.com/5428933/136442756-b7eb932b-3b96-4998-8c31-3ff1ba8ee8bb.png)
+
 
 ### How do I know if my new codespace was created from a prebuild?
 There's an environment value set when you first create the codespace. You can paste this command into the built-in terminal:
