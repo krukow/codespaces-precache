@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: github/codespaces-precache@v1.0.1
+      - uses: github/codespaces-precache@v1-stable
         with:
           regions: WestUs2
           sku_name: standardLinux32gb
@@ -82,19 +82,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+We recommend you use the `v1-stable` version of the action, which will include the latest stable features, fixes, and patches.
+
 ## Troubleshooting
 
 ### I set up the action, how do I know if it worked?
 
-Check the action logs for an error message or a success response with a state of 'pending' - this means the prebuild is being set up. It may take some time to set up the first time, so wait a few minutes and try creating a codespace to see if it is created from a prebuild.
+Check the action logs for an error message or a success response. It may take some time to set up the first time, so wait a few minutes after seeing a success and try creating a codespace to see if it is created from a prebuild. Note that if you have multiple regions listed, each will be set up separately, so a partial failure is possible if some succeed and some fail.
 
 #### Action failure looks like:
 
-![Screen Shot 2021-08-26 at 12 54 37 PM](https://user-images.githubusercontent.com/5428933/131005400-68daaa3b-7a28-4d8e-bfa1-c22fbcb21170.png)
+![Screen Shot 2021-08-26 at 12 54 37 PM](https://user-images.githubusercontent.com/5428933/136073771-b29a1bea-c847-44bf-a2ff-62f021c61c59.png)
 
 #### Action success response looks like:
 
-![Screen Shot 2021-08-26 at 11 54 33 AM](https://user-images.githubusercontent.com/5428933/131005421-e1292e23-095b-4eee-9839-ebec31924b07.png)
+![Screen Shot 2021-10-07 at 2 18 42 PM](https://user-images.githubusercontent.com/5428933/136442756-b7eb932b-3b96-4998-8c31-3ff1ba8ee8bb.png)
+
 
 ### How do I know if my new codespace was created from a prebuild?
 There's an environment value set when you first create the codespace. You can paste this command into the built-in terminal:
