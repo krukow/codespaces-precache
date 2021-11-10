@@ -50,7 +50,7 @@ The following properties can be added as input properties using [jobs.<job_id>.s
 |2-core |	basicLinux32gb|
 |4-core	| standardLinux32gb|
 |8-core	| premiumLinux|
-|16-core | largePremiumLinux*|
+|16-core | largePremiumLinux|
 |32-core | xLargePremiumLinux*|
 
 *_Contact us to get access_
