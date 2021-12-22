@@ -69,6 +69,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+permissions:
+  content: write
 jobs:
   createPrebuild:
     runs-on: ubuntu-latest
