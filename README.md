@@ -70,7 +70,7 @@ on:
       - main
   workflow_dispatch:
 permissions:
-  content: write
+  contents: write
 jobs:
   createPrebuild:
     runs-on: ubuntu-latest
